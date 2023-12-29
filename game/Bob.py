@@ -4,9 +4,11 @@ from Floor import FLOOR_POSY
 
 
 #movement speed
-BOB_WALK_SPEED = 4
-BOB_DASH_SPEED = 7
+WALK_SPEED = 4
+DASH_SPEED = 7
 INIT_JUMP_SPEED = 12
+#dash time in seconds
+DASH_TIME = 0.2
 
 class Bob(pygame.sprite.Sprite):
     def __init__(self, init_x, init_y):
@@ -22,11 +24,11 @@ class Bob(pygame.sprite.Sprite):
 
     def movement(self, keys):
         if keys[pygame.K_a]:
-            self.rect.x -= BOB_WALK_SPEED
+            self.rect.x -= WALK_SPEED
             self.states["mov left"] = True
             self.states["mov right"] = False
         if keys[pygame.K_d]:
-            self.rect.x += BOB_WALK_SPEED
+            self.rect.x += WALK_SPEED
             self.states["mov right"] = True
             self.states["mov left"] = False
         if keys[pygame.K_j]:
@@ -39,9 +41,9 @@ class Bob(pygame.sprite.Sprite):
 
     def dash(self):
         if self.states["mov right"]:
-            self.rect.x += BOB_DASH_SPEED
+            self.rect.x += DASH_SPEED
         if self.states["mov left"]:
-            self.rect.x -= BOB_DASH_SPEED
+            self.rect.x -= DASH_SPEED
         
     def avoid_offscreen(self):
         if self.rect.left <= 0:
@@ -51,3 +53,5 @@ class Bob(pygame.sprite.Sprite):
 
     def moving_right(self):
         return self.states["mov right"]
+    def dashing(self):
+        return self.states["dashing"]

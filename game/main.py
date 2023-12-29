@@ -1,5 +1,6 @@
 import pygame
 import Bob, Killer, Floor, Text, Sky
+import time
 
 #width and height in pixels of the images
 WIN_WIDTH, WIN_HEIGHT = 640, 480
@@ -53,10 +54,11 @@ def main():
     spikes = [Killer.Spike(-20, i * SPIKE_SIZE, SPIKE_IMG_RIGHT) for i in range(int(MAX_SPIKES / 2))]
     spikes.extend([Killer.Spike(WIN_WIDTH + 20, i * SPIKE_SIZE, SPIKE_IMG_LEFT) for i in range(int(MAX_SPIKES / 2))])
     speed_y = Bob.INIT_JUMP_SPEED
-
+    dash_stop_time = -1
     while True:
         blit_non_killer(screen, bob, floor, sky, score_text) 
         blit_spikes(screen, spikes, MAX_SPIKES)
+        current_time = time.time()
         pygame.display.update()
 
         keys = pygame.key.get_pressed()
@@ -64,9 +66,17 @@ def main():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
+        
+        if bob.dashing():
+            if dash_stop_time == -1:
+                dash_stop_time = current_time + Bob.DASH_TIME
+            elif dash_stop_time > current_time:
+                bob.dash()
+            else:
+                speed_y = 0 - GRAVITY
+                bob.jump(speed_y)
+                bob.states["dashing"] = False
 
-        if bob.states["dashing"] == True:
-            bob.dash()
         else:
             bob.movement(keys)
             if keys[pygame.K_SPACE] and bob.rect.bottom <= FLOOR_POSY:
