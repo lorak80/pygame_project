@@ -16,7 +16,7 @@ class Bob(pygame.sprite.Sprite):
         self.surf = pygame.image.load(BOB_IMG_LEFT).convert_alpha()
         self.init_x = init_x
         self.init_y = init_y
-        self.states = {"mov right": False, "mov left": False, "dashing": False}
+        self.states = {"mov right": False, "mov left": False, "dashed": False,"dashing": False}
         self.rect = self.surf.get_rect(midbottom = (init_x, init_y))
 
     def reset_pos(self):
@@ -37,7 +37,7 @@ class Bob(pygame.sprite.Sprite):
             self.states["dashing"] = False
  
     def jump(self, speed_y):
-        self.rect.y -= speed_y
+        self.rect.top -= speed_y
 
     def dash(self):
         if self.states["mov right"]:
@@ -51,7 +51,11 @@ class Bob(pygame.sprite.Sprite):
         elif self.rect.right >= WIN_WIDTH:
             self.rect.right = WIN_WIDTH
 
+    def on_ground(self):
+        return (self.rect.bottom >= FLOOR_POSY)
     def moving_right(self):
         return self.states["mov right"]
     def dashing(self):
         return self.states["dashing"]
+    def dashed(self):
+        return self.states["dashed"]

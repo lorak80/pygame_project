@@ -2,6 +2,8 @@ import pygame
 import Bob, Killer, Floor, Text, Sky
 import time
 
+#ticks of the clock per second (also known as fps)
+FPS = 60
 #width and height in pixels of the images
 WIN_WIDTH, WIN_HEIGHT = 640, 480
 BOB_SURF_WIDTH, BOB_SURF_HEIGHT = 30, 30
@@ -51,8 +53,8 @@ def main():
     sky = Sky.Sky()
     floor = Floor.Floor()
     bob = Bob.Bob(WIN_WIDTH / 2, FLOOR_POSY)#bob is the player
-    spikes = [Killer.Spike(-20, i * SPIKE_SIZE, SPIKE_IMG_RIGHT) for i in range(int(MAX_SPIKES / 2))]
-    spikes.extend([Killer.Spike(WIN_WIDTH + 20, i * SPIKE_SIZE, SPIKE_IMG_LEFT) for i in range(int(MAX_SPIKES / 2))])
+    spikes = [Killer.Spike(0, i * SPIKE_SIZE, SPIKE_IMG_RIGHT) for i in range(int(MAX_SPIKES / 2))]
+    spikes.extend([Killer.Spike(WIN_WIDTH, i * SPIKE_SIZE, SPIKE_IMG_LEFT) for i in range(int(MAX_SPIKES / 2))])
     speed_y = Bob.INIT_JUMP_SPEED
     dash_stop_time = -1
     while True:
@@ -67,7 +69,7 @@ def main():
                 pygame.quit()
                 exit()
         
-        if bob.dashing():
+        if bob.dashing() and not bob.dashed():
             if dash_stop_time == -1:
                 dash_stop_time = current_time + Bob.DASH_TIME
             elif dash_stop_time > current_time:
@@ -76,7 +78,8 @@ def main():
                 speed_y = 0 - GRAVITY
                 bob.jump(speed_y)
                 bob.states["dashing"] = False
-
+                dash_stop_time = -1
+                bob.states["dashed"] = True
         else:
             bob.movement(keys)
             if keys[pygame.K_SPACE] and bob.rect.bottom <= FLOOR_POSY:
@@ -88,12 +91,13 @@ def main():
             else:
                 speed_y = Bob.INIT_JUMP_SPEED
                 bob.rect.bottom = FLOOR_POSY
-        
+        if bob.on_ground():
+            bob.states["dashed"] = False
         check_spike_collision(bob, spikes, MAX_SPIKES)
 
         bob.avoid_offscreen()
 
-        clock.tick(60)
+        clock.tick(FPS)
      
 if __name__=="__main__":
     main()
