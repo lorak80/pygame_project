@@ -1,9 +1,11 @@
 import pygame
 
+FONT_PATH = "font/Fyodor-BoldExpanded.ttf"
+
 class Text(pygame.sprite.Sprite):
     def __init__(self, text, color, size, pos):
         super().__init__()
-        self.font = pygame.font.Font("font/Fyodor-BoldExpanded.ttf", size)
+        self.font = pygame.font.Font(FONT_PATH, size)
         self.surf = self.font.render(text, False, color)
         self.rect = self.surf.get_rect(midtop = pos)
 

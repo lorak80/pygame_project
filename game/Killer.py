@@ -6,7 +6,7 @@ class Killer(pygame.sprite.Sprite):
         super().__init__()
         self.init_x = init_x
         self.init_y = init_y
-    def kill(self, bob: Bob):
+    def kill(self, bob):
         bob.reset_pos()
 
 class Spike(Killer):
