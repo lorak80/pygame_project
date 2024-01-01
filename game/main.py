@@ -1,6 +1,7 @@
 #                                THIS IS MY FIRST PYGAME PROJECT!
 
-#     In this game you are bob, bob needs to avoid floating spikes and enemies walking around
+#     In this game you are Bob, Bob needs to avoid floating spikes and Glob walking around, the more
+#                              time you survive, the higher the score
 #                             Bob has 2 skills, jumping and dashing
 
 # Bob jumps with spacebar, if you don't need to jump high, you simply release spacebar when needed
@@ -8,11 +9,16 @@
 #                            you will jump as soon as bob touches the ground.
 
 # Bob dashes with [j] , if you dash you can't do anything else other than dashing, but you can move
-#             straight in all 8 directions, horizontally, vertically and diagonally (to be implemented)
+#               straight in all 8 directions, horizontally, vertically and diagonally
 #       Bob cannot dash more than once in the air, the dash refills when bob touches the ground
-#
-#
-#
+
+#                                            SPIKES (randomness: to be fully implemented)
+#       Spikes are the hardest killer to avoid, they randomly come from the left and right side
+#                               of the screen in controlled random order
+
+#                                         GLOB ENEMY (to be fully implemented after spikes)
+#     Glob is a static enemy that always moves in the same way with the same speed, combined with 
+#                       the spikes, it adds more difficulty to the game
 
 import pygame
 import Bob, Killer, Floor, Text, Sky
@@ -52,7 +58,7 @@ def blit_non_killer(screen, bob, floor, sky, text0):
     screen.blit(sky.surf, sky.rect)
     screen.blit(text0.surf, text0.rect)
     #based on the moving direction of bob, it turns its body towards that direction
-    if bob.moving_right():
+    if bob.facing_right():
         screen.blit(bob.surfR, bob.rect)
     else:
         screen.blit(bob.surfL, bob.rect)
@@ -67,6 +73,22 @@ def check_spike_collision(bob, spikes, n_spikes):
         else:
             i += 1
 
+def move_spikes(spikes):
+    for spike in spikes:
+        spike.move()
+
+def offscreen_spikes(spikes):
+    for spike in spikes:
+        if spike.RIGHT and spike.rect.left >= WIN_WIDTH or not spike.RIGHT and spike.rect.right <= 0:
+            spike.random_speed()
+            spike.reset_pos()
+
+
+
+def do_everything_for_spikes(spikes):
+    move_spikes(spikes)
+    offscreen_spikes(spikes)
+
 def main():
     pygame.init()
     pygame.display.set_caption("bob")
@@ -78,9 +100,9 @@ def main():
     floor = Floor.Floor()
     bob = Bob.Bob(WIN_WIDTH / 2, FLOOR_POSY)#bob is the player
     #"spikes" is the list of all spike instances
-    spikes = [Killer.Spike(0, i * SPIKE_SIZE, SPIKE_IMG_RIGHT) for i in range(int(MAX_SPIKES / 2))]
+    spikes = [Killer.Spike(0, i * SPIKE_SIZE, SPIKE_IMG_RIGHT, True) for i in range(int(MAX_SPIKES / 2))]
     #adds to the list the spike on the right side of the screen
-    spikes.extend([Killer.Spike(WIN_WIDTH, i * SPIKE_SIZE, SPIKE_IMG_LEFT) for i in range(int(MAX_SPIKES / 2))])
+    spikes.extend([Killer.Spike(WIN_WIDTH, i * SPIKE_SIZE, SPIKE_IMG_LEFT, False) for i in range(int(MAX_SPIKES / 2))])
     #vertical speed used when jumping
     speed_y = Bob.INIT_JUMP_SPEED
     #dash_stop_time is used to measure how long the dash has been going on for
@@ -101,6 +123,8 @@ def main():
                 pygame.quit()
                 exit()
 
+        do_everything_for_spikes(spikes)
+
         if bob.dashing() and not bob.dashed():
             if dash_stop_time == -1:#if there is no stop time (bob has just started to dash)
                 dash_stop_time = current_time + Bob.DASH_TIME #get the stop time
@@ -113,7 +137,7 @@ def main():
                 dash_stop_time = -1 #there is no stop time anymore
                 bob.states["dashed"] = True
         else:
-            bob.movement(keys)#checks WASD for moving around || and dash directions (not implemented yet)
+            bob.movement(keys)#checks WASD for moving around and dash directions
             #if you are holding space and  bob is touching the ground or floating in the air
             if keys[pygame.K_SPACE] and bob.rect.bottom <= FLOOR_POSY:
                 bob.jump(speed_y)#start/continue jumping..
@@ -129,6 +153,7 @@ def main():
         if bob.on_ground():
             #bob can dash again
             bob.states["dashed"] = False
+
         
         check_spike_collision(bob, spikes, MAX_SPIKES)
 
