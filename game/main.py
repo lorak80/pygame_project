@@ -41,7 +41,7 @@ FONT_SIZE_SCORE = 25
 GRAVITY = 0.56
 #this stronger gravity is to get a more dynamic jump, if you release space while jumping, 
 #it makes you fall earlier and faster
-STRONG_GRAVITY = GRAVITY * 2.1 
+STRONG_GRAVITY = GRAVITY * 2.1
 #max amount of spikes
 MAX_SPIKES = int(FLOOR_POSY / SPIKE_SIZE) * 2
 #half amount of the max spikes
@@ -58,10 +58,11 @@ def blit_spikes(screen, spikes, n_spikes):
         screen.blit(spikes[i].surf, spikes[i].rect)
 
 #blits everything that doesn't kill
-def blit_non_killer(screen, bob, floor, sky, text0):
+def blit_non_killer(screen, bob, floor, sky, text0, text1):
     screen.blit(floor.surf, floor.rect)
     screen.blit(sky.surf, sky.rect)
     screen.blit(text0.surf, text0.rect)
+    screen.blit(text1.surf, text1.rect)
     #based on the moving direction of bob, it turns its body towards that direction
     if bob.facing_right():
         screen.blit(bob.surfR, bob.rect)
@@ -69,39 +70,32 @@ def blit_non_killer(screen, bob, floor, sky, text0):
         screen.blit(bob.surfL, bob.rect)
         
 #function that checks spike collisions, if true, kill bob and exit loop
-def check_spike_collision(bob, spikes, n_spikes):
-    not_killed, i = True, 0
-    while i < n_spikes and not_killed:
-        if bob.rect.colliderect(spikes[i]):
-            spikes[i].kill(bob)
-            not_killed = False
-        else:
-            i += 1
+def spike_collision(bob, spikes, score_text):
+    for spike in spikes:
+        if bob.rect.colliderect(spike):
+            spike.kill(bob, spikes, score_text)
+            return True
+    return False
 
 def randomize_spikes_to_move(spikes):
     rand_bool = [random.choice([True, False]) for _ in spikes]
     return [i for i, _ in enumerate(spikes) if rand_bool[i]]
 
-
-def move_spikes(spikes, spikes_to_move):
-    for i in spikes_to_move:
-        spikes[i].move()
-        if spikes[i].is_offscreen():
-            spikes[i].reset_pos()
-        
-
 def offscreen_spikes(spikes):
     return [i for i, spike in enumerate(spikes) if spike.is_offscreen()]
 
-def do_everything_for_spikes(spikes, spikes_to_move):
-    move_spikes(spikes, spikes_to_move)
-            
+def move_spikes(spikes):
+    for spike in spikes:
+        spike.move()
+        if spike.is_offscreen():
+            spike.reset_pos()
 
 def main():
     pygame.init()
     pygame.display.set_caption("bob")
-    score_text = Text.Score("Score: 0.0", "black", FONT_SIZE_SCORE, ORIGIN)
-    score_text.set_score("Score: 0.1", "black")
+    score_text = Text.Score("Score: 0.00", "black", FONT_SIZE_SCORE, ORIGIN)
+    score_text.rect.left = 0
+    highscore_text = Text.Score("Highscore: 0.00", "black", FONT_SIZE_SCORE, (WIN_WIDTH / 2, 0))
     screen = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))#sets the resolution of the screen
     clock = pygame.time.Clock()#clock used to set fps
     sky = Sky.Sky()
@@ -111,19 +105,18 @@ def main():
     spikes = [Killer.Spike(-20, i * SPIKE_SIZE, SPIKE_IMG_RIGHT, True) for i in range(HALF_SPIKES)]
     #adds to the list the spike on the right side of the screen
     spikes.extend([Killer.Spike(WIN_WIDTH + 20, i * SPIKE_SIZE, SPIKE_IMG_LEFT, False) for i in range(HALF_SPIKES)])
-    #used to check which spikes can move to not overwhelm the player
-    spikes_to_move = randomize_spikes_to_move(spikes)
-    if BOTTOM_SPIKES[0] not in spikes_to_move and BOTTOM_SPIKES[1] not in spikes_to_move:
-        spikes_to_move.append(random.choice(BOTTOM_SPIKES[0], BOTTOM_SPIKES[1])) 
-    print(spikes_to_move)
     #vertical speed used when jumping
     speed_y = Bob.INIT_JUMP_SPEED
     #dash_stop_time is used to measure how long the dash has been going on for
     dash_stop_time = -1
+
+    highscore = -1
+
+    start_time = time.time()
     
     #game loop
     while True:
-        blit_non_killer(screen, bob, floor, sky, score_text) 
+        blit_non_killer(screen, bob, floor, sky, score_text, highscore_text) 
         blit_spikes(screen, spikes, MAX_SPIKES)
         #gets the current time, which is the time in seconds 
         #since the epoch (1st january 1970 00:00:00 UTC)
@@ -136,8 +129,6 @@ def main():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
-            
-        do_everything_for_spikes(spikes, spikes_to_move)
 
         if bob.dashing() and not bob.dashed():
             if dash_stop_time == -1:#if there is no stop time (bob has just started to dash)
@@ -168,9 +159,13 @@ def main():
             #bob can dash again
             bob.states["dashed"] = False
 
-        
-        check_spike_collision(bob, spikes, MAX_SPIKES)
-
+        move_spikes(spikes)
+        if spike_collision(bob, spikes, score_text):
+            if current_time - start_time > highscore:
+                highscore = current_time - start_time
+                highscore_text.set_score(highscore)
+            start_time = time.time()
+        score_text.set_score(current_time - start_time)
         bob.avoid_offscreen()
 
         clock.tick(FPS)

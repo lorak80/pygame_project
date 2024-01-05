@@ -1,17 +1,21 @@
 import pygame, random
 import main
 
-SPIKE_SPEEDS = [2, 2.5, 3]
-MIN_RESP_TIME = 60 * 2
-MAX_RESP_TIME = 60 * 4
+SPIKE_SPEEDS = [3, 3.5, 4]
+MIN_RESP_TIME = 60 * 1.5
+MAX_RESP_TIME = 60 * 10
+SPIKE_HITBOX_SIZE = {"width": 16, "height": 16}
 
 class Killer(pygame.sprite.Sprite):
     def __init__(self, init_x, init_y):
         super().__init__()
         self.init_x = init_x
         self.init_y = init_y
-    def kill(self, bob):
+    def kill(self, bob, spikes, score):
         bob.reset_pos()
+        for spike in spikes:
+            spike.reset_pos()
+        score.reset()
 
 class Spike(Killer):
     def __init__(self, init_x, init_y, image, right):
@@ -20,6 +24,8 @@ class Spike(Killer):
         self.speed = random.choice(SPIKE_SPEEDS)
         self.surf = pygame.image.load(image).convert_alpha()
         self.rect = self.surf.get_rect(midtop = (self.init_x, self.init_y))
+        self.deflate_hitbox()
+        self.reset_pos()
     def move(self):
         if self.RIGHT:
             self.rect.x += self.speed
@@ -39,6 +45,12 @@ class Spike(Killer):
                 offscreen = True
 
         return offscreen
+
+    def deflate_hitbox(self):
+        old_center = self.rect.center
+        self.rect.width = SPIKE_HITBOX_SIZE["width"]
+        self.rect.height = SPIKE_HITBOX_SIZE["height"]
+        self.rect.center = old_center
 
     def reset_pos(self):
         if self.RIGHT:
