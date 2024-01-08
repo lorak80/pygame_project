@@ -1,11 +1,5 @@
-#           BOB CLASS
-# This is the bob class for my first pygame project
-# to read how the game works, read the first comments in the "main.py" file
-
 import pygame
-from main import WIN_WIDTH, FLOOR_POSY, BOB_IMG_LEFT, BOB_IMG_RIGHT
-from Floor import FLOOR_POSY
-
+from main import WIN_WIDTH, FLOOR_POSY, BOB_IMG_LEFT, BOB_IMG_RIGHT, FPS
 
 #movement speed
 WALK_SPEED = 5
@@ -13,19 +7,28 @@ DASH_SPEED = 8
 INIT_JUMP_SPEED = 12
 #dash time in seconds
 DASH_TIME = 0.2
+#hitbox size to make the game more balanced
+HITBOX_SIZE = {"width": 11, "height": 30}
 
 class Bob(pygame.sprite.Sprite):
     def __init__(self, init_x, init_y): #initial x;y position
         super().__init__()
-        #left and right image of bob, to make bob face the direction that it moving to
-        self.surfL = pygame.image.load(BOB_IMG_LEFT).convert_alpha()
-        self.surfR = pygame.image.load(BOB_IMG_RIGHT).convert_alpha()
+        #left and right image of bob, to make 
+        #bob face the direction that it moving to
+        #and also its frames of walking
+        self.surfLArr = [pygame.image.load(BOB_IMG_LEFT[0]).convert_alpha(), \
+                        pygame.image.load(BOB_IMG_LEFT[1]).convert_alpha(), \
+                        pygame.image.load(BOB_IMG_LEFT[2]).convert_alpha()]
+        self.surfRArr = [pygame.image.load(BOB_IMG_RIGHT[0]).convert_alpha(),\
+                         pygame.image.load(BOB_IMG_RIGHT[1]).convert_alpha(),\
+                         pygame.image.load(BOB_IMG_RIGHT[2]).convert_alpha()]
         self.init_x = init_x 
         self.init_y = init_y
         #possible states of bob
         self.states = {"mov right": False, "mov left": False, "mov up": False,
                        "mov down": False, "face right": False, "dashed": False,"dashing": False}
-        self.rect = self.surfL.get_rect(midbottom = (init_x, init_y))
+        self.rect = self.surfLArr[0].get_rect(midbottom = (init_x, init_y))
+        self.deflate_hitbox()
 
     #resets the position to the center of the screen and on the ground
     def reset_pos(self):
@@ -61,7 +64,7 @@ class Bob(pygame.sprite.Sprite):
     #moves bob vertically/makes him jump
     def jump(self, speed_y):
         self.rect.y -= speed_y
-    
+
     def dash(self):
         if self.states["mov right"]:
             self.rect.x += DASH_SPEED
@@ -80,8 +83,26 @@ class Bob(pygame.sprite.Sprite):
             self.rect.left = 0
         elif self.rect.right >= WIN_WIDTH:
             self.rect.right = WIN_WIDTH
+    #shrinks the hitbox
+    def deflate_hitbox(self):
+        old_center = self.rect.center
+        self.rect.width = HITBOX_SIZE["width"]
+        self.rect.height = HITBOX_SIZE["height"]
+        self.rect.center = old_center
+    #returns the surface to blit/the current walking frame to the right
+    def surf_to_blitR(self, current_frame):
+        if not self.moving():
+            return self.surfRArr[0]
+        else:
+            return self.surfRArr[current_frame % 3]
+    #same thing but to the left
+    def surf_to_blitL(self, current_frame):
+        if not self.moving():
+            return self.surfLArr[0]
+        else:
+            return self.surfLArr[current_frame % 3]
 
-    #a few boolean methods to check states
+    #a few boolean methods to check states/positions
     def on_ground(self):
         return (self.rect.bottom >= FLOOR_POSY)
     def facing_right(self):
@@ -90,3 +111,5 @@ class Bob(pygame.sprite.Sprite):
         return self.states["dashing"]
     def dashed(self):
         return self.states["dashed"]
+    def moving(self):
+        return self.states["mov left"] or self.states["mov right"]

@@ -1,10 +1,12 @@
 import pygame, random
 import main
-
-SPIKE_SPEEDS = [3, 3.5, 4]
-MIN_RESP_TIME = 60 * 1.5
+#list of speeds to give to random.choice
+SPEEDS = [3, 3.5, 4]
+#minimum and maximum respawn time
+MIN_RESP_TIME = 60 * 2
 MAX_RESP_TIME = 60 * 10
-SPIKE_HITBOX_SIZE = {"width": 16, "height": 16}
+#new size of the spikes' hitboxes to make them more balanced and easier to avoid
+HITBOX_SIZE = {"width": 16, "height": 16}
 
 class Killer(pygame.sprite.Sprite):
     def __init__(self, init_x, init_y):
@@ -20,21 +22,23 @@ class Killer(pygame.sprite.Sprite):
 class Spike(Killer):
     def __init__(self, init_x, init_y, image, right):
         super().__init__(init_x, init_y)
-        self.RIGHT = right
-        self.speed = random.choice(SPIKE_SPEEDS)
+        self.RIGHT = right #attribute to see which way the spike is facing
+        self.speed = random.choice(SPEEDS) #random initial speed
         self.surf = pygame.image.load(image).convert_alpha()
         self.rect = self.surf.get_rect(midtop = (self.init_x, self.init_y))
-        self.deflate_hitbox()
+        self.deflate_hitbox() 
+        #randomizes the spike's position at its beginning of existence
         self.reset_pos()
+    #moves the spike right or left based on self.RIGHT
     def move(self):
         if self.RIGHT:
             self.rect.x += self.speed
         else:
             self.rect.x -= self.speed
-    
+    #randomize speed, used when spike goes offscreen
     def random_speed(self):
-        self.speed = random.choice(SPIKE_SPEEDS)
-    
+        self.speed = random.choice(SPEEDS)
+    #returns if the spike is offscreen or not
     def is_offscreen(self):
         offscreen = False
         if self.RIGHT:
@@ -45,13 +49,15 @@ class Spike(Killer):
                 offscreen = True
 
         return offscreen
-
+    #shrinks the hitbox size to make the game not unplayable
     def deflate_hitbox(self):
         old_center = self.rect.center
-        self.rect.width = SPIKE_HITBOX_SIZE["width"]
-        self.rect.height = SPIKE_HITBOX_SIZE["height"]
+        self.rect.width = HITBOX_SIZE["width"]
+        self.rect.height = HITBOX_SIZE["height"]
         self.rect.center = old_center
-
+        print(self.rect.width)
+    #resets position randomly offscreen, 
+    #so that the spike doesn't instantly come onscreen 
     def reset_pos(self):
         if self.RIGHT:
             self.rect.left = random.randint(-MAX_RESP_TIME, -MIN_RESP_TIME)

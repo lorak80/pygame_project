@@ -12,17 +12,13 @@
 #               straight in all 8 directions, horizontally, vertically and diagonally
 #       Bob cannot dash more than once in the air, the dash refills when bob touches the ground
 
-#                                            SPIKES (randomness: to be fully implemented)
+#                                            SPIKES
 #       Spikes are the hardest killer to avoid, they randomly come from the left and right side
 #                               of the screen in controlled random order
 
-#                                         GLOB ENEMY (to be fully implemented after spikes)
-#     Glob is a static enemy that always moves in the same way with the same speed, combined with 
-#                       the spikes, it adds more difficulty to the game
-
 import pygame
 import Bob, Killer, Floor, Text, Sky
-import time, random
+import time
 
 #ticks of the clock per second (also known as frames per second (fps))
 FPS = 60
@@ -49,41 +45,41 @@ HALF_SPIKES = int(MAX_SPIKES / 2)
 #bottom spikes indexes
 BOTTOM_SPIKES = [10, 21]
 #image strings
-BOB_IMG_LEFT, BOB_IMG_RIGHT = "images/guyLeft.png", "images/guyRight.png"
+BOB_IMG_LEFT, BOB_IMG_RIGHT = ["images/bobLeft.png", "images/bobLeft1.png", "images/bobLeft2.png"], ["images/bobRight.png", "images/bobRight1.png", "images/bobRight2.png"]
 SPIKE_IMG_LEFT, SPIKE_IMG_RIGHT = "images/spikeLeft.png", "images/spikeRight.png"
+LOGO_IMG = "images/logo.png"
+#background music
+BG_MUSIC = "music/bgm.mp3"
+#death sfx (to be implemented)
+DEATH_SFX = "sfx/death.mp3"
+
+MUSIC_DURATION = 225 #in seconds
 
 #blits all the spikes
-def blit_spikes(screen, spikes, n_spikes):
-    for i in range(n_spikes):
-        screen.blit(spikes[i].surf, spikes[i].rect)
+def blit_spikes(screen, spikes):
+    for spike in spikes:
+        screen.blit(spike.surf, spike.rect)
 
 #blits everything that doesn't kill
-def blit_non_killer(screen, bob, floor, sky, text0, text1):
+def blit_non_killer(screen, bob, floor, sky, text0, text1, current_frame):
     screen.blit(floor.surf, floor.rect)
     screen.blit(sky.surf, sky.rect)
     screen.blit(text0.surf, text0.rect)
     screen.blit(text1.surf, text1.rect)
     #based on the moving direction of bob, it turns its body towards that direction
     if bob.facing_right():
-        screen.blit(bob.surfR, bob.rect)
+        screen.blit(bob.surf_to_blitR(current_frame), bob.rect)
     else:
-        screen.blit(bob.surfL, bob.rect)
+        screen.blit(bob.surf_to_blitL(current_frame), bob.rect)
         
-#function that checks spike collisions, if true, kill bob and exit loop
+#function that checks spike collisions and resets values if the collision occurred
 def spike_collision(bob, spikes, score_text):
     for spike in spikes:
         if bob.rect.colliderect(spike):
             spike.kill(bob, spikes, score_text)
             return True
     return False
-
-def randomize_spikes_to_move(spikes):
-    rand_bool = [random.choice([True, False]) for _ in spikes]
-    return [i for i, _ in enumerate(spikes) if rand_bool[i]]
-
-def offscreen_spikes(spikes):
-    return [i for i, spike in enumerate(spikes) if spike.is_offscreen()]
-
+#function that moves spikes in their direction, also resets a spike's position when offscreen
 def move_spikes(spikes):
     for spike in spikes:
         spike.move()
@@ -93,9 +89,11 @@ def move_spikes(spikes):
 def main():
     pygame.init()
     pygame.display.set_caption("bob")
-    score_text = Text.Score("Score: 0.00", "black", FONT_SIZE_SCORE, ORIGIN)
+    pygame.display.set_icon(pygame.image.load(LOGO_IMG))
+    #creation of all the objects
+    score_text = Text.Score("Score: 0.00", "white", FONT_SIZE_SCORE, ORIGIN)
     score_text.rect.left = 0
-    highscore_text = Text.Score("Highscore: 0.00", "black", FONT_SIZE_SCORE, (WIN_WIDTH / 2, 0))
+    highscore_text = Text.Score("Highscore: 0.00", "white", FONT_SIZE_SCORE, (WIN_WIDTH / 2, 0))
     screen = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))#sets the resolution of the screen
     clock = pygame.time.Clock()#clock used to set fps
     sky = Sky.Sky()
@@ -103,7 +101,7 @@ def main():
     bob = Bob.Bob(WIN_WIDTH / 2, FLOOR_POSY)#bob is the player
     #"spikes" is the list of all spike instances
     spikes = [Killer.Spike(-20, i * SPIKE_SIZE, SPIKE_IMG_RIGHT, True) for i in range(HALF_SPIKES)]
-    #adds to the list the spike on the right side of the screen
+    #adds to the list the spikes on the right side of the screen
     spikes.extend([Killer.Spike(WIN_WIDTH + 20, i * SPIKE_SIZE, SPIKE_IMG_LEFT, False) for i in range(HALF_SPIKES)])
     #vertical speed used when jumping
     speed_y = Bob.INIT_JUMP_SPEED
@@ -112,14 +110,22 @@ def main():
 
     highscore = -1
 
+    #gets the current time, which is the time in seconds 
+    #since the epoch (1st january 1970 00:00:00 UTC)
     start_time = time.time()
-    
+    #counter of frames to check which frame the game is on right now
+    #used to control the animation of bob
+    current_frame = 1
+    music = pygame.mixer_music
+    music.load(BG_MUSIC)
+    music.set_volume(0.12)
+    music.play()
+    music_stop_time = start_time + MUSIC_DURATION
+
     #game loop
     while True:
-        blit_non_killer(screen, bob, floor, sky, score_text, highscore_text) 
-        blit_spikes(screen, spikes, MAX_SPIKES)
-        #gets the current time, which is the time in seconds 
-        #since the epoch (1st january 1970 00:00:00 UTC)
+        blit_non_killer(screen, bob, floor, sky, score_text, highscore_text, current_frame) 
+        blit_spikes(screen, spikes)
         current_time = time.time()
         pygame.display.update()
 
@@ -136,7 +142,7 @@ def main():
             elif dash_stop_time >= current_time:
                 bob.dash()
             else: #when the dash is over
-                speed_y = 0 - GRAVITY 
+                speed_y = 0 - GRAVITY #set a negative speed value
                 bob.jump(speed_y) #start moving downwards
                 bob.states["dashing"] = False
                 dash_stop_time = -1 #there is no stop time anymore
@@ -160,15 +166,27 @@ def main():
             bob.states["dashed"] = False
 
         move_spikes(spikes)
+
         if spike_collision(bob, spikes, score_text):
+            #sets new high score if curr_score > high score
             if current_time - start_time > highscore:
                 highscore = current_time - start_time
-                highscore_text.set_score(highscore)
+                highscore_text.set_highscore(highscore)
             start_time = time.time()
         score_text.set_score(current_time - start_time)
+        #avoid bob going too far left/right
         bob.avoid_offscreen()
-
+        #tick at 60 fps
         clock.tick(FPS)
+        #increases/resets frame counter
+        if current_frame >= FPS:
+            current_frame = 1
+        else:
+            current_frame += 1
+        if music_stop_time <= current_time:
+            music_stop_time += MUSIC_DURATION
+            music.rewind()
+
      
 if __name__=="__main__":
     main()
