@@ -1,21 +1,21 @@
-#                                THIS IS MY FIRST PYGAME PROJECT!
+"""#                                THIS IS MY FIRST PYGAME PROJECT!
 
-#     In this game you are Bob, Bob needs to avoid floating spikes and Glob walking around, the more
-#                              time you survive, the higher the score
-#                             Bob has 2 skills, jumping and dashing
+     In this game you are Bob, Bob needs to avoid floating spikes and Glob walking around, the more
+                              time you survive, the higher the score
+                             Bob has 2 skills, jumping and dashing
 
-# Bob jumps with spacebar, if you don't need to jump high, you simply release spacebar when needed
-#                   and you will fall earlier and faster, if you hold the spacebar, 
-#                            you will jump as soon as bob touches the ground.
+ Bob jumps with spacebar, if you don't need to jump high, you simply release spacebar when needed
+                   and you will fall earlier and faster, if you hold the spacebar, 
+                            you will jump as soon as bob touches the ground.
 
-# Bob dashes with [j] , if you dash you can't do anything else other than dashing, but you can move
-#               straight in all 8 directions, horizontally, vertically and diagonally
-#       Bob cannot dash more than once in the air, the dash refills when bob touches the ground
+ Bob dashes with [j] , if you dash you can't do anything else other than dashing, but you can move
+               straight in all 8 directions, horizontally, vertically and diagonally
+       Bob cannot dash more than once in the air, the dash refills when bob touches the ground
 
-#                                            SPIKES
-#       Spikes are the hardest killer to avoid, they randomly come from the left and right side
-#                               of the screen in controlled random order
-
+                                            SPIKES
+                         Spikes randomly come from the left and right side
+                               of the screen in controlled random order
+"""
 import pygame
 import Bob, Killer, Floor, Text, Sky
 import time
@@ -55,23 +55,23 @@ DEATH_SFX = "sfx/death.mp3"
 
 MUSIC_DURATION = 225 #in seconds
 
-#blits all the spikes
-def blit_spikes(screen, spikes):
-    for spike in spikes:
-        screen.blit(spike.surf, spike.rect)
-
-#blits everything that doesn't kill
-def blit_non_killer(screen, bob, floor, sky, text0, text1, current_frame):
-    screen.blit(floor.surf, floor.rect)
-    screen.blit(sky.surf, sky.rect)
-    screen.blit(text0.surf, text0.rect)
-    screen.blit(text1.surf, text1.rect)
+#blits everything
+def blit_all(screen, bob, spikes, current_frame, *objects):
+    for object in objects:
+        screen.blit(object.surf, object.rect)
     #based on the moving direction of bob, it turns its body towards that direction
     if bob.facing_right():
         screen.blit(bob.surf_to_blitR(current_frame), bob.rect)
     else:
         screen.blit(bob.surf_to_blitL(current_frame), bob.rect)
-        
+    for spike in spikes:
+        screen.blit(spike.surf, spike.rect)
+
+def blit_few(screen, *objects):
+    for object in objects:
+        screen.blit(object.surf, object.rect)
+
+
 #function that checks spike collisions and resets values if the collision occurred
 def spike_collision(bob, spikes, score_text):
     for spike in spikes:
@@ -109,10 +109,6 @@ def main():
     dash_stop_time = -1
 
     highscore = -1
-
-    #gets the current time, which is the time in seconds 
-    #since the epoch (1st january 1970 00:00:00 UTC)
-    start_time = time.time()
     #counter of frames to check which frame the game is on right now
     #used to control the animation of bob
     current_frame = 1
@@ -120,12 +116,27 @@ def main():
     music.load(BG_MUSIC)
     music.set_volume(0.12)
     music.play()
-    music_stop_time = start_time + MUSIC_DURATION
+    menu = True
 
+    while menu:
+        blit_few(screen, floor, sky)
+        pygame.display.update()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+        if pygame.key.get_pressed()[pygame.K_RSHIFT]:
+            menu = False
+        
+    #gets the current time, which is the time in seconds 
+    #since the epoch (1st january 1970 00:00:00 UTC)
+    start_time = time.time()
+
+    music_stop_time = start_time + MUSIC_DURATION
     #game loop
     while True:
-        blit_non_killer(screen, bob, floor, sky, score_text, highscore_text, current_frame) 
-        blit_spikes(screen, spikes)
+        blit_all(screen, bob, spikes, current_frame, 
+                 floor, sky, score_text, highscore_text,) 
         current_time = time.time()
         pygame.display.update()
 
@@ -178,11 +189,9 @@ def main():
         bob.avoid_offscreen()
         #tick at 60 fps
         clock.tick(FPS)
+
         #increases/resets frame counter
-        if current_frame >= FPS:
-            current_frame = 1
-        else:
-            current_frame += 1
+        current_frame += 1
         if music_stop_time <= current_time:
             music_stop_time += MUSIC_DURATION
             music.rewind()

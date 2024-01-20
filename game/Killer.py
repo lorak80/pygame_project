@@ -55,7 +55,6 @@ class Spike(Killer):
         self.rect.width = HITBOX_SIZE["width"]
         self.rect.height = HITBOX_SIZE["height"]
         self.rect.center = old_center
-        print(self.rect.width)
     #resets position randomly offscreen, 
     #so that the spike doesn't instantly come onscreen 
     def reset_pos(self):

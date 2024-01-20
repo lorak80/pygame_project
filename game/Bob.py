@@ -1,5 +1,5 @@
 import pygame
-from main import WIN_WIDTH, FLOOR_POSY, BOB_IMG_LEFT, BOB_IMG_RIGHT, FPS
+from main import WIN_WIDTH, FLOOR_POSY, BOB_IMG_LEFT, BOB_IMG_RIGHT
 
 #movement speed
 WALK_SPEED = 5
@@ -9,6 +9,8 @@ INIT_JUMP_SPEED = 12
 DASH_TIME = 0.2
 #hitbox size to make the game more balanced
 HITBOX_SIZE = {"width": 11, "height": 30}
+#number of frames of the walking animation
+FRAMES = 3
 
 class Bob(pygame.sprite.Sprite):
     def __init__(self, init_x, init_y): #initial x;y position
@@ -16,12 +18,8 @@ class Bob(pygame.sprite.Sprite):
         #left and right image of bob, to make 
         #bob face the direction that it moving to
         #and also its frames of walking
-        self.surfLArr = [pygame.image.load(BOB_IMG_LEFT[0]).convert_alpha(), \
-                        pygame.image.load(BOB_IMG_LEFT[1]).convert_alpha(), \
-                        pygame.image.load(BOB_IMG_LEFT[2]).convert_alpha()]
-        self.surfRArr = [pygame.image.load(BOB_IMG_RIGHT[0]).convert_alpha(),\
-                         pygame.image.load(BOB_IMG_RIGHT[1]).convert_alpha(),\
-                         pygame.image.load(BOB_IMG_RIGHT[2]).convert_alpha()]
+        self.surfLArr = [pygame.image.load(BOB_IMG_LEFT[i]).convert_alpha() for i in range(FRAMES)]
+        self.surfRArr = [pygame.image.load(BOB_IMG_RIGHT[i]).convert_alpha() for i in range(FRAMES)]
         self.init_x = init_x 
         self.init_y = init_y
         #possible states of bob
@@ -33,7 +31,7 @@ class Bob(pygame.sprite.Sprite):
     #resets the position to the center of the screen and on the ground
     def reset_pos(self):
         self.rect.midbottom = (WIN_WIDTH / 2, FLOOR_POSY)
-    #checks which keys are being pressed and what to do in which case
+    #checks which keys are being pressed and changes states based on that
     def movement(self, keys):
         if keys[pygame.K_a]:
             self.rect.x -= WALK_SPEED
@@ -64,7 +62,7 @@ class Bob(pygame.sprite.Sprite):
     #moves bob vertically/makes him jump
     def jump(self, speed_y):
         self.rect.y -= speed_y
-
+    #can move bob in one of 8 directions/dash
     def dash(self):
         if self.states["mov right"]:
             self.rect.x += DASH_SPEED
@@ -94,13 +92,13 @@ class Bob(pygame.sprite.Sprite):
         if not self.moving():
             return self.surfRArr[0]
         else:
-            return self.surfRArr[current_frame % 3]
+            return self.surfRArr[current_frame % FRAMES]
     #same thing but to the left
     def surf_to_blitL(self, current_frame):
         if not self.moving():
             return self.surfLArr[0]
         else:
-            return self.surfLArr[current_frame % 3]
+            return self.surfLArr[current_frame % FRAMES]
 
     #a few boolean methods to check states/positions
     def on_ground(self):
